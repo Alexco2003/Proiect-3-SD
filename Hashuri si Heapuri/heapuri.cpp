@@ -124,6 +124,7 @@ int main()
             /// Remove the xth inserted element from the heap
             f1>>x;
             remove(order[x]);
+            continue;
         }
         if (op==3)
         {
