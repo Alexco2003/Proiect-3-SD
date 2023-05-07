@@ -72,7 +72,12 @@ void remove(int order)
     /// Decrease the size of the heap
     sz--;
     /// Sift the swapped node down to its correct position
-    siftDown(index);
+    if(heap[index].first < heap[father(index)].first)
+        siftUp(index);
+    else
+        siftDown(index);
+
+
 }
 
 /// Insert the given value into the heap
