@@ -3,9 +3,10 @@
 
 using namespace std;
 
-const int maxN = 2e5+1;
-int heap[maxN], pos[maxN], order[maxN];
-int n, sz = 0, ord=0;
+const int maxN = 2e5 + 1;
+pair<int, int> heap[maxN]; /// The heap will be a collection of pairs of (value, order index in which it was inserted)
+int pos[maxN]; /// To keep the position from the heap of the xth inserted element
+int n, sz = 0, ord = 0;
 
 /// Function to get the index of the parent node of a given node
 int father(int index)
@@ -25,39 +26,32 @@ int rightSon(int index)
     return index * 2 + 1;
 }
 
-/// Sift up the node at the given index until its parent is smaller
+/// SiftUp operation of the heap
 void siftUp(int index)
 {
-    while (heap[index] < heap[father(index)] && index > 1)
+    while (index > 1 && heap[index].first < heap[father(index)].first)
     {
-        /// Swap the node with its parent if the parent is smaller
         swap(heap[index], heap[father(index)]);
-        /// Update the positions of the swapped nodes in the pos array
-        pos[heap[father(index)]] = father(index);
-        pos[heap[index]] = index;
-        /// Move up to the parent node
-        index /= 2;
+        pos[heap[index].second] = index;  /// Update the position of the swapped node
+        pos[heap[father(index)].second] = father(index);  /// Update the position of the parent node
+        index = father(index);
     }
 }
 
-/// Sift down the node at the given index until both of its children are larger
+/// SiftDown operation of the heap
 void siftDown(int index)
 {
     while (leftSon(index) <= sz)
     {
         int left = leftSon(index), right = rightSon(index);
         int child = left;
-        /// If the right child is smaller, use that instead
-        if (right <= sz && heap[right] < heap[left])
+        if (right <= sz && heap[right].first < heap[left].first)
             child = right;
-        /// If the child is smaller than the parent, swap them
-        if (heap[child] < heap[index])
+        if (heap[child].first < heap[index].first)
         {
             swap(heap[index], heap[child]);
-            /// Update the positions of the swapped nodes in the pos array
-            pos[heap[child]] = child;
-            pos[heap[index]] = index;
-            /// Move down to the child node
+            pos[heap[index].second] = index;  /// Update the position of the swapped node
+            pos[heap[child].second] = child;  /// Update the position of the child node
             index = child;
         }
         else
@@ -65,15 +59,16 @@ void siftDown(int index)
     }
 }
 
-/// Remove the node with the given value from the heap
-void remove(int x)
+
+/// Remove the node with the given order from the heap
+void remove(int order)
 {
     /// Get the index of the node to remove from the pos array
-    int index = pos[x];
+    int index = pos[order];
     /// Swap the node with the last node in the heap
     swap(heap[index], heap[sz]);
-    /// Update the position of the node that was swapped into the index
-    pos[heap[index]] = index;
+    /// Update the position of the swapped node with the order of the removed node
+    pos[heap[index].second] = index;
     /// Decrease the size of the heap
     sz--;
     /// Sift the swapped node down to its correct position
@@ -83,16 +78,13 @@ void remove(int x)
 /// Insert the given value into the heap
 void insert(int x)
 {
-    /// Increase the size of the heap
+    ///Increase the size of the heap
     sz++;
-    /// Insert the value at the end of the heap
-    heap[sz] = x;
-    /// Store the position of the value in the pos array
-    pos[x] = sz;
     /// Increase the order counter
     ord++;
-    /// Store the order in which the value was inserted in the order array
-    order[ord] = x;
+    /// Insert the value at the end of the heap
+    heap[sz] = make_pair(x, ord);
+    pos[ord] = sz;
     /// Sift the inserted node up to its correct position
     siftUp(sz);
 }
@@ -100,13 +92,13 @@ void insert(int x)
 /// Get the minimum value in the heap (the root node)
 int getMin()
 {
-    return heap[1];
+    return heap[1].first;
 }
 
 int main()
 {
-    ifstream f1 ("heapuri.in");
-    ofstream f2 ("heapuri.out");
+    ifstream f1("heapuri.in");
+    ofstream f2("heapuri.out");
     f1 >> n;
     for (int i = 1; i <= n; i++)
     {
@@ -119,14 +111,14 @@ int main()
             insert(x);
             continue;
         }
-        if (op==2)
+        if (op == 2)
         {
             /// Remove the xth inserted element from the heap
-            f1>>x;
-            remove(order[x]);
+            f1 >> x;
+            remove(x);
             continue;
         }
-        if (op==3)
+        if (op == 3)
         {
             /// Print the minimum element from the heap
             f2 << getMin() << endl;
