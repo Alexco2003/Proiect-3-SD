@@ -1,55 +1,47 @@
 #include <iostream>
 #include <fstream>
-#include <climits>
+#include <vector>
+
 using namespace std;
 
-const int MAX_N = 100001;
+vector<vector<int>> sparse_table; /// Sparse table for RMQ
+vector<int> log_table; /// Logarithm lookup table
+vector<int> arr; /// Input vector
 
-/// Structure to represent a node in the interval tree
-struct Node
+/// Function to build the sparse table
+void buildSparseTable()
 {
-    int min_val;  /// Minimum value in the range represented by the node
-};
+    int N = arr.size();
+    int logN = log_table[N];
 
-Node tree[4 * MAX_N];  /// Interval tree
-int elements[MAX_N];  /// Array to store the elements
+    sparse_table.resize(N, vector<int>(logN + 1));
 
-/// Function to build the interval tree
-void buildTree(int node, int start, int end)
-{
-    if (start == end)
+    /// Initialize the sparse table with the input array values
+    for (int i = 0; i < N; i++)
     {
-        /// Leaf node, store the element
-        tree[node].min_val = elements[start];
-        return;
+        sparse_table[i][0] = arr[i];
     }
 
-    int mid = (start + end) / 2;
-
-    /// Recursively build the left and right subtrees
-    buildTree(2 * node, start, mid);
-    buildTree(2 * node + 1, mid + 1, end);
-
-    /// Update the current node with the minimum value of its children
-    tree[node].min_val = min(tree[2 * node].min_val, tree[2 * node + 1].min_val);
+    /// Build the sparse table using dynamic programming
+    for (int j = 1; (1 << j) <= N; j++)
+    {
+        for (int i = 0; i + (1 << j) - 1 < N; i++)
+        {
+            int l = 1 << (j - 1);
+            sparse_table[i][j] = min(sparse_table[i][j - 1], sparse_table[i + l][j - 1]);
+        }
+    }
 }
 
 /// Function to query the minimum element in a given range
-int queryMin(int node, int start, int end, int l, int r)
+int queryMin(int left, int right)
 {
+    int length = right - left + 1;
+    int logLength = log_table[length];
 
-    if (start > r || end < l)
-        return INT_MAX;
+    int minVal = min(sparse_table[left][logLength], sparse_table[right - (1 << logLength) + 1][logLength]);
 
-    if (start >= l && end <= r)
-        return tree[node].min_val;
-
-    int mid = (start + end) / 2;
-    /// Partial overlap, query the minimum element from the left and right subtrees
-    int left = queryMin(2 * node, start, mid, l, r);
-    int right = queryMin(2 * node + 1, mid + 1, end, l, r);
-
-    return min(left, right);
+    return minVal;
 }
 
 int main()
@@ -57,24 +49,35 @@ int main()
     int N, M;
     ifstream f1("rmq.in");
     ofstream f2("rmq.out");
+
     f1 >> N >> M;
 
-    for (int i = 1; i <= N; i++)
+    arr.resize(N);
+    for (int i = 0; i < N; ++i)
     {
-        f1 >> elements[i];
+        f1 >> arr[i];
     }
 
-    /// Build the interval tree
-    buildTree(1, 1, N);
+    /// Precompute the logarithm lookup table
+    log_table.resize(N + 1);
+    log_table[1] = 0;
+    for (int i = 2; i <= N; i++)
+    {
+        log_table[i] = log_table[i / 2] + 1;
+    }
 
-    while (M--)
+    /// Build the sparse table
+    buildSparseTable();
+
+    /// Process the queries
+    for (int i = 0; i < M; ++i)
     {
         int x, y;
         f1 >> x >> y;
 
         /// Find the minimum element in the interval [x, y]
-        int min_val = queryMin(1, 1, N, x, y);
-        f2 << min_val << endl;
+        int minVal = queryMin(x - 1, y - 1);
+        f2 << minVal << endl;
     }
 
     f1.close();
